@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SA Municipal Electricity Tariff Tracker, 2026/27 | Journey2Green</title>
+  <meta name="description" content="NERSA-approved 2026/27 electricity tariff increases across South African metros, with a live multi-year compound impact model for a residential household budget. Prepared for Journey2Green." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232E7D32' d='M16 3C9 9 6 14 6 20a10 10 0 0 0 20 0c0-6-3-11-10-17z'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+  <!-- 1. HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <span class="brand-logo" aria-label="Journey2Green logo">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="21" cy="21" r="20" stroke="currentColor" stroke-width="2"/>
+          <path d="M21 8C14 14 11 18 11 24a10 10 0 0 0 20 0c0-6-3-10-10-16z" fill="currentColor"/>
+          <path d="M21 12v18" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1>SA Municipal Electricity Tariff Tracker, 2026/27</h1>
+        <p>NERSA-approved increases, effective 1 July 2026 (municipal) and 1 April 2026 (Eskom direct). Prepared 9 July 2026.</p>
+      </div>
+      <span class="brand-tag">Journey2Green</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- 2. KPI CARDS -->
+    <section id="kpis">
+      <div class="section-head">
+        <div class="eyebrow">Headline figures</div>
+        <h2>2026/27 approved increases at a glance</h2>
+        <p class="lead">National benchmarks from the NERSA decision, plus the steepest and cheapest metros in the country.</p>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card accent">
+          <div class="label">Eskom direct</div>
+          <div class="value green">8.76%</div>
+          <div class="sub">Average increase, effective 1 April 2026</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="label">Municipal average</div>
+          <div class="value green">9.01%</div>
+          <div class="sub">National guideline, effective 1 July 2026</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="label">Cheapest metro</div>
+          <div class="value green">7.5%</div>
+          <div class="sub">City of Cape Town, lowest in the country</div>
+        </div>
+        <div class="kpi-card accent">
+          <div class="label">Steepest metro</div>
+          <div class="value amber">11.10%</div>
+          <div class="sub">Buffalo City, East London</div>
+        </div>
+      </div>
+
+      <div class="subhead">Live household impact, from the model below</div>
+      <div class="kpi-grid">
+        <div class="kpi-card live">
+          <div class="label">Cumulative rise</div>
+          <div class="value green" id="kpi-cumulative">49.4%</div>
+          <div class="sub" id="kpi-cumulative-sub">Municipal account, over 5 years</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Extra per month</div>
+          <div class="value green" id="kpi-extra-month">R1,582</div>
+          <div class="sub" id="kpi-extra-month-sub">By 2030/31, vs starting bill</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Extra per year</div>
+          <div class="value green" id="kpi-extra-year">R18,988</div>
+          <div class="sub">Additional annual spend by final year</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Total extra spend</div>
+          <div class="value green" id="kpi-total-extra">R55,141</div>
+          <div class="sub">Cumulative over horizon vs flat baseline</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ALERT PANEL -->
+    <section id="alert">
+      <div class="section-head">
+        <div class="eyebrow">Publication status</div>
+        <h2>NERSA schedule and IBT-publication alert</h2>
+        <p class="lead">Tracking which metro schedules are officially published versus estimated, so figures can be used with the right level of confidence.</p>
+      </div>
+      <div class="alert-note">
+        NERSA published Reasons for Decision on all 176 municipal tariff applications for FY2026/27, effective 1 July 2026.
+      </div>
+      <div class="status-grid" id="status-grid"></div>
+      <ul class="gap-list">
+        <li>Exact FY2026/27 per-block c/kWh for City Power (Johannesburg) and City of Tshwane are not yet in an accessible official PDF, so 2026/27 rates are marked as estimates.</li>
+        <li>eThekwini exact final flat R/kWh at 9% is pending the official PDF.</li>
+        <li>The 2027/28 separately-determined municipal ERTSA percentage has not yet been determined.</li>
+      </ul>
+      <p class="lead" style="margin-top:16px">Reference: <a href="https://www.nersa.org.za/" target="_blank" rel="noopener" style="color:var(--green-700);font-weight:700">NERSA tariff portal</a>.</p>
+    </section>
+
+    <!-- 4. METRO BENCHMARK -->
+    <section id="benchmark">
+      <div class="section-head">
+        <div class="eyebrow">Metro comparison</div>
+        <h2>2026/27 average increase by metro</h2>
+        <p class="lead">Bars above the 9.01% national municipal guideline are shown in amber, those at or below in green. The dashed line marks the guideline.</p>
+      </div>
+      <div class="chart-box">
+        <div class="chart-holder mid"><canvas id="benchmarkChart"></canvas></div>
+      </div>
+      <div class="table-wrap">
+        <table id="benchmark-table">
+          <thead>
+            <tr><th>Metro</th><th>2026/27 increase</th><th>vs guideline</th><th>Note</th><th>Source</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. INTERACTIVE MODEL -->
+    <section id="model">
+      <div class="section-head">
+        <div class="eyebrow">Interactive model</div>
+        <h2>Multi-year compound impact on a household budget</h2>
+        <p class="lead">Adjust the inputs to see how a residential monthly bill compounds. Fixed near-term increases are applied first (2026/27 and 2027/28), then your chosen forward rate. Both a municipal-account and an Eskom-direct household are projected.</p>
+      </div>
+      <div class="model-layout">
+        <div class="controls">
+          <div class="control">
+            <label for="startBill">Starting monthly bill: R</label>
+            <div class="hint">Current bill before the 2026/27 increase</div>
+            <div class="row">
+              <input type="range" id="startBillRange" min="500" max="10000" step="50" value="3200" />
+              <input type="number" id="startBill" min="0" step="50" value="3200" />
+            </div>
+          </div>
+          <div class="control">
+            <label for="consumption">Baseline consumption: kWh/month</label>
+            <div class="hint">Display only, for context</div>
+            <div class="row">
+              <input type="range" id="consumptionRange" min="100" max="2000" step="25" value="900" />
+              <input type="number" id="consumption" min="0" step="25" value="900" />
+            </div>
+          </div>
+          <div class="control">
+            <label for="fwdRate">Forward annual increase, from 2028/29: %</label>
+            <div class="hint">Applied to every year beyond 2027/28</div>
+            <div class="row">
+              <input type="range" id="fwdRateRange" min="0" max="20" step="0.1" value="8.0" />
+              <span class="valout" id="fwdRateOut">8.0%</span>
+            </div>
+          </div>
+          <div class="control">
+            <label for="horizon">Projection horizon: years</label>
+            <div class="hint">Number of annual increases to model</div>
+            <div class="row">
+              <input type="range" id="horizonRange" min="2" max="10" step="1" value="5" />
+              <span class="valout" id="horizonOut">5 years</span>
+            </div>
+          </div>
+          <div class="fixed-note">
+            Fixed known increases: 2026/27 municipal 9.01% (Eskom path 8.76%), 2027/28 8.83% for both. Years beyond use your forward rate.
+          </div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-holder tall"><canvas id="modelChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. IBT SCHEDULES -->
+    <section id="schedules">
+      <div class="section-head">
+        <div class="eyebrow">Residential tariff schedules</div>
+        <h2>Inclining block tariffs and residential rates 2026/27</h2>
+        <p class="lead">Block structures, fixed charges and Free Basic Electricity allocations by metro. Rates marked as estimates escalate the 2025/26 baseline pending official 2026/27 PDFs.</p>
+      </div>
+      <div class="tabs" id="ibt-tabs"></div>
+      <div id="ibt-panels"></div>
+    </section>
+
+    <!-- 7. MULTI-YEAR CONTEXT -->
+    <section id="context">
+      <div class="section-head">
+        <div class="eyebrow">Compounding context</div>
+        <h2>Annual increases 2022/23 to 2027/28</h2>
+        <p class="lead">Five consecutive years of above-inflation increases show why the compounding effect is significant for household budgets.</p>
+      </div>
+      <div class="chart-box">
+        <div class="chart-holder mid"><canvas id="contextChart"></canvas></div>
+      </div>
+      <div class="table-wrap">
+        <table id="context-table">
+          <thead>
+            <tr><th>Financial year</th><th>Eskom direct</th><th>Municipal</th><th>Source</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 8. SOURCES FOOTER -->
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="eyebrow">References</div>
+      <h2 style="font-size:1.1rem;font-weight:700">Sources</h2>
+      <div class="src-grid" id="sources-grid"></div>
+      <p class="footer-fine">
+        Prepared for Wessel, CEO of Journey2Green, on 9 July 2026. All figures are traceable to the NERSA decision and the metro and news sources listed above. Estimated per-block rates are clearly flagged and will be updated when official 2026/27 PDFs are published. This dashboard is an internal planning aid, not financial advice.
+      </p>
+    </div>
+  </footer>
+
+  <script src="chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

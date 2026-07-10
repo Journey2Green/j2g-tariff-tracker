@@ -175,6 +175,166 @@
       </div>
     </section>
 
+    <!-- 5b. C&I CUSTOMER VIEW -->
+    <section id="ci-view">
+      <div class="section-head">
+        <div class="eyebrow">Journey2Green engineering view</div>
+        <h2>C&amp;I customer view: solar plus BESS vs the rising grid</h2>
+        <p class="lead">This is the Journey2Green blended-tariff engineering view. It overlays a solar plus BESS blended tariff against the customer's grid tariff trajectory, so a CFO can see the year the grid curve crosses above the J2G solution. It uses the J2G 12-step C&amp;I sizing methodology, Step 6: blended tariff engineering.</p>
+      </div>
+
+      <div class="model-layout">
+        <div class="controls">
+          <div class="control">
+            <label for="ciSpend">Customer annual electricity spend: R</label>
+            <div class="hint">Total annual bill across all meters</div>
+            <div class="row">
+              <input type="range" id="ciSpendRange" min="1000000" max="60000000" step="500000" value="12000000" />
+              <input type="number" id="ciSpend" min="0" step="500000" value="12000000" />
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="ciGridToday">Blended grid tariff today: c/kWh</label>
+            <div class="hint">Total bill divided by total kWh (default 220 c/kWh = R2.20/kWh)</div>
+            <div class="row">
+              <input type="range" id="ciGridTodayRange" min="120" max="400" step="1" value="220" />
+              <input type="number" id="ciGridToday" min="1" step="1" value="220" />
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Commercial route</label>
+            <div class="hint">Three J2G routes, matched to your balance sheet</div>
+            <div class="route-group" id="ciRouteGroup">
+              <label class="route-opt"><input type="radio" name="ciRoute" value="dci" checked /> <span>Outright / DCI, customer owns asset</span></label>
+              <label class="route-opt"><input type="radio" name="ciRoute" value="btm" /> <span>PPA behind-the-meter (BTM)</span></label>
+              <label class="route-opt"><input type="radio" name="ciRoute" value="weps" /> <span>PPA wheeled (WEPS)</span></label>
+            </div>
+          </div>
+
+          <div class="control ci-ppa-only" id="ciPpaTariffControl">
+            <label for="ciPpaTariff">PPA Year 1 tariff: c/kWh</label>
+            <div class="hint">Default 155 c/kWh = R1.55/kWh for BTM</div>
+            <div class="row">
+              <input type="range" id="ciPpaTariffRange" min="80" max="250" step="1" value="155" />
+              <input type="number" id="ciPpaTariff" min="1" step="1" value="155" />
+            </div>
+          </div>
+
+          <div class="control ci-ppa-only" id="ciPpaEscControl">
+            <label for="ciPpaEsc">PPA annual escalation: %</label>
+            <div class="hint">CPI-linked, default 4.0%</div>
+            <div class="row">
+              <input type="range" id="ciPpaEscRange" min="0" max="10" step="0.1" value="4.0" />
+              <span class="valout" id="ciPpaEscOut">4.0%</span>
+            </div>
+          </div>
+
+          <div class="control ci-weps-only" id="ciWepsControl">
+            <label for="ciWepsAdder">WEPS network adder: c/kWh</label>
+            <div class="hint">Transmission plus distribution use-of-system, losses, ancillary and environmental levy, added to the wheeled PPA tariff</div>
+            <div class="row">
+              <input type="range" id="ciWepsAdderRange" min="0" max="120" step="1" value="45" />
+              <input type="number" id="ciWepsAdder" min="0" step="1" value="45" />
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="ciSelfGen">Solar plus BESS self-generation share: %</label>
+            <div class="hint">The RE penetration of load; the rest stays on grid</div>
+            <div class="row">
+              <input type="range" id="ciSelfGenRange" min="0" max="90" step="1" value="65" />
+              <span class="valout" id="ciSelfGenOut">65%</span>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="ciForwardEsc">Grid forward escalation, from year 3: %</label>
+            <div class="hint">Applied from year 3 on; years 1 and 2 use the known municipal path</div>
+            <div class="row">
+              <input type="range" id="ciForwardEscRange" min="0" max="20" step="0.1" value="8.0" />
+              <span class="valout" id="ciForwardEscOut">8.0%</span>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="ciHorizon">Projection horizon: years</label>
+            <div class="hint">This is a 20-year instrument</div>
+            <div class="row">
+              <input type="range" id="ciHorizonRange" min="5" max="25" step="1" value="20" />
+              <span class="valout" id="ciHorizonOut">20 years</span>
+            </div>
+          </div>
+
+          <div class="fixed-note">
+            Grid path: year 1 uses 2026/27 municipal 9.01%, year 2 uses 2027/28 8.83%, then your forward escalation from year 3 on. Owned solar plus BESS levelised cost is 95 c/kWh in year 1, escalating at 2% for O&amp;M only.
+          </div>
+        </div>
+
+        <div class="chart-box">
+          <div class="ci-answer" id="ciAnswer"></div>
+          <div class="chart-holder tall"><canvas id="ciChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="subhead">Live outcome, for the selected route</div>
+      <div class="kpi-grid ci-kpi-grid">
+        <div class="kpi-card live">
+          <div class="label">Blended tariff today</div>
+          <div class="value green" id="ci-kpi-today">220 c/kWh</div>
+          <div class="sub">Total bill divided by total kWh</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">J2G blended tariff, year 1</div>
+          <div class="value green" id="ci-kpi-y1">0 c/kWh</div>
+          <div class="sub" id="ci-kpi-y1-sub">Selected route</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Year 1 saving</div>
+          <div class="value green" id="ci-kpi-save1">R0</div>
+          <div class="sub" id="ci-kpi-save1-sub">vs grid tariff year 1</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">20-year cumulative saving</div>
+          <div class="value green" id="ci-kpi-cum">R0</div>
+          <div class="sub" id="ci-kpi-cum-sub">Undiscounted, vs do-nothing</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Self-generation share applied</div>
+          <div class="value green" id="ci-kpi-share">65%</div>
+          <div class="sub">Solar plus BESS penetration of load</div>
+        </div>
+        <div class="kpi-card live">
+          <div class="label">Effective saving per kWh, year 1</div>
+          <div class="value green" id="ci-kpi-perkwh">0 c/kWh</div>
+          <div class="sub">Grid year 1 minus solution blend year 1</div>
+        </div>
+      </div>
+
+      <div class="ci-lower">
+        <div class="table-wrap ci-table-wrap">
+          <table id="ci-table">
+            <thead>
+              <tr><th>Year</th><th>Grid tariff, do-nothing (c/kWh)</th><th>Selected route blended (c/kWh)</th><th>Annual saving (R)</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="ci-callout">
+          <div class="ci-callout-title">What J2G does differently</div>
+          <ul>
+            <li>Bill reconstruction, not bill quotation.</li>
+            <li>30-minute resolution, not monthly averages.</li>
+            <li>Curtailment minimisation, not panel maximisation.</li>
+            <li>Blended tariff engineering: the only tariff number that allows a real comparison.</li>
+            <li>Commercial structure matched to your balance sheet, not ours.</li>
+            <li>Risks named, not buried.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <!-- 6. IBT SCHEDULES -->
     <section id="schedules">
       <div class="section-head">

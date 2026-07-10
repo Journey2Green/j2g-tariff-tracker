@@ -426,6 +426,217 @@ function initControls() {
   bindSync('horizonRange', null, 'horizonOut', 'years', true);
 }
 
+// ---------- C&I customer view (Journey2Green blended-tariff engineering) ----------
+// Fixed known grid path for years 1 and 2, then editable forward rate from year 3.
+const CI_GRID_FIXED = [0.0901, 0.0883]; // 2026/27 municipal, 2027/28
+const CI_OWNED_Y1 = 95;    // owned solar+BESS levelised cost, c/kWh year 1
+const CI_OWNED_ESC = 0.02; // O&M-only escalation
+
+const ROUTE_LABEL = {
+  dci: 'Outright / DCI',
+  btm: 'PPA behind-the-meter (BTM)',
+  weps: 'PPA wheeled (WEPS)'
+};
+
+let ciChart = null;
+
+const ciNum = (id) => parseFloat(document.getElementById(id).value) || 0;
+function ciSelectedRoute() {
+  const el = document.querySelector('input[name="ciRoute"]:checked');
+  return el ? el.value : 'dci';
+}
+
+// c/kWh -> displayed c/kWh string with thousands separators
+const fmtC = (n) => Math.round(n).toLocaleString('en-GB') + ' c/kWh';
+
+function ciComputeSeries(inputs) {
+  const { gridToday, forwardEsc, ppaY1, ppaEsc, wepsAdder, selfGen, horizon } = inputs;
+  // Grid (do-nothing) trajectory
+  const grid = [];
+  let g = gridToday;
+  for (let y = 0; y < horizon; y++) {
+    const r = y < CI_GRID_FIXED.length ? CI_GRID_FIXED[y] : forwardEsc;
+    g = g * (1 + r);
+    grid.push(g);
+  }
+  // Self-gen cost paths
+  const dciGen = [], btmGen = [], wepsGen = [];
+  for (let y = 0; y < horizon; y++) {
+    dciGen.push(CI_OWNED_Y1 * Math.pow(1 + CI_OWNED_ESC, y));
+    btmGen.push(ppaY1 * Math.pow(1 + ppaEsc, y));
+    wepsGen.push((ppaY1 + wepsAdder) * Math.pow(1 + ppaEsc, y));
+  }
+  const blend = (gen) => grid.map((gr, y) => selfGen * gen[y] + (1 - selfGen) * gr);
+  return {
+    grid,
+    dci: blend(dciGen),
+    btm: blend(btmGen),
+    weps: blend(wepsGen)
+  };
+}
+
+function ciRecompute() {
+  const spend = Math.max(0, ciNum('ciSpend'));
+  const gridToday = Math.max(1, ciNum('ciGridToday'));
+  const selfGen = ciNum('ciSelfGenRange') / 100;
+  const forwardEsc = ciNum('ciForwardEscRange') / 100;
+  const ppaEsc = ciNum('ciPpaEscRange') / 100;
+  const ppaY1 = ciNum('ciPpaTariff');
+  const wepsAdder = ciNum('ciWepsAdder');
+  const horizon = parseInt(document.getElementById('ciHorizonRange').value, 10) || 20;
+  const route = ciSelectedRoute();
+
+  // annual kWh from annual spend / grid tariff today (both in R, convert c->R)
+  const annualKWh = spend / (gridToday / 100);
+
+  const s = ciComputeSeries({ gridToday, forwardEsc, ppaY1, ppaEsc, wepsAdder, selfGen, horizon });
+  const sel = s[route];
+
+  // Annual saving (R) each year = (grid - solution) c/kWh, /100 to R, x annual kWh
+  const annualSaving = sel.map((v, y) => (s.grid[y] - v) / 100 * annualKWh);
+  const cumSaving = annualSaving.reduce((a, b) => a + b, 0);
+
+  const gridY1 = s.grid[0];
+  const solY1 = sel[0];
+  const save1R = (gridY1 - solY1) / 100 * annualKWh;
+  const save1Pct = gridY1 > 0 ? (gridY1 - solY1) / gridY1 * 100 : 0;
+  const perKwhY1 = gridY1 - solY1;
+
+  // KPIs
+  document.getElementById('ci-kpi-today').textContent = fmtC(gridToday);
+  document.getElementById('ci-kpi-y1').textContent = fmtC(solY1);
+  document.getElementById('ci-kpi-y1-sub').textContent = ROUTE_LABEL[route];
+  document.getElementById('ci-kpi-save1').textContent = fmtR(save1R);
+  document.getElementById('ci-kpi-save1-sub').textContent = 'Year 1, ' + fmtPct(save1Pct, 1) + ' below grid';
+  document.getElementById('ci-kpi-cum').textContent = fmtR(cumSaving);
+  document.getElementById('ci-kpi-cum-sub').textContent = 'Undiscounted, over ' + horizon + ' years';
+  document.getElementById('ci-kpi-share').textContent = Math.round(selfGen * 100) + '%';
+  document.getElementById('ci-kpi-perkwh').textContent = Math.round(perKwhY1).toLocaleString('en-GB') + ' c/kWh';
+
+  // Lead-with-the-answer banner + crossover
+  let crossYear = -1;
+  for (let y = 0; y < horizon; y++) { if (s.grid[y] > sel[y]) { crossYear = y + 1; break; } }
+  const ans = document.getElementById('ciAnswer');
+  if (crossYear === 1) {
+    ans.textContent = 'The grid curve is already above the J2G ' + ROUTE_LABEL[route] +
+      ' solution in year 1: a year 1 gap of ' + Math.round(perKwhY1).toLocaleString('en-GB') +
+      ' c/kWh, saving ' + fmtR(save1R) + ' in the first year.';
+  } else if (crossYear > 1) {
+    ans.textContent = 'The grid curve crosses above the J2G ' + ROUTE_LABEL[route] +
+      ' solution in year ' + crossYear + '.';
+  } else {
+    ans.textContent = 'On these inputs the grid curve does not cross above the J2G ' +
+      ROUTE_LABEL[route] + ' solution within ' + horizon + ' years.';
+  }
+
+  // Chart
+  const labels = [];
+  for (let y = 1; y <= horizon; y++) labels.push('Y' + y);
+
+  const dim = 'rgba(120,120,120,0.28)';
+  const routeColor = { dci: C.green700, btm: C.green500, weps: '#00897B' };
+  const datasets = [
+    {
+      label: 'Do-nothing, grid only',
+      data: s.grid,
+      borderColor: C.red,
+      backgroundColor: 'rgba(178,58,46,0.05)',
+      fill: false, tension: 0.2, pointRadius: 0, borderWidth: 2.5
+    }
+  ];
+  ['dci', 'btm', 'weps'].forEach((r) => {
+    const isSel = r === route;
+    datasets.push({
+      label: 'Solar plus BESS, ' + ROUTE_LABEL[r] + (isSel ? '' : ' (other route)'),
+      data: s[r],
+      borderColor: isSel ? routeColor[r] : dim,
+      backgroundColor: 'transparent',
+      fill: false,
+      tension: 0.2,
+      pointRadius: 0,
+      borderWidth: isSel ? 2.8 : 1.4,
+      borderDash: isSel ? [] : [4, 4],
+      order: isSel ? 0 : 2
+    });
+  });
+
+  if (!ciChart) {
+    ciChart = new Chart(document.getElementById('ciChart'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 14, boxHeight: 3, usePointStyle: false, font: { size: 11 } } },
+          tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + Math.round(c.parsed.y).toLocaleString('en-GB') + ' c/kWh' } }
+        },
+        scales: {
+          y: { beginAtZero: false, ticks: { callback: (v) => v + ' c/kWh' }, title: { display: true, text: 'Blended tariff (c/kWh)' } },
+          x: { title: { display: true, text: 'Projection year' } }
+        }
+      }
+    });
+  } else {
+    ciChart.data.labels = labels;
+    ciChart.data.datasets = datasets;
+    ciChart.update();
+  }
+
+  // Table: show milestone years within horizon
+  const milestones = [1, 5, 10, 15, 20, 25].filter((y) => y <= horizon);
+  if (milestones[milestones.length - 1] !== horizon) milestones.push(horizon);
+  const tb = document.querySelector('#ci-table tbody');
+  tb.innerHTML = milestones.map((y) => {
+    const i = y - 1;
+    return '<tr>' +
+      '<td>Year ' + y + '</td>' +
+      '<td class="num">' + Math.round(s.grid[i]).toLocaleString('en-GB') + '</td>' +
+      '<td class="num">' + Math.round(sel[i]).toLocaleString('en-GB') + '</td>' +
+      '<td class="num delta-under">' + fmtR(annualSaving[i]) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function ciUpdateRouteInputs() {
+  const route = ciSelectedRoute();
+  const showPpa = route === 'btm' || route === 'weps';
+  const showWeps = route === 'weps';
+  document.querySelectorAll('.ci-ppa-only').forEach((el) => el.classList.toggle('show', showPpa));
+  document.querySelectorAll('.ci-weps-only').forEach((el) => el.classList.toggle('show', showWeps));
+}
+
+function initCiControls() {
+  // number+range pairs
+  bindSync('ciSpendRange', 'ciSpend', null, '', false);
+  bindSync('ciGridTodayRange', 'ciGridToday', null, '', false);
+  bindSync('ciPpaTariffRange', 'ciPpaTariff', null, '', false);
+  bindSync('ciWepsAdderRange', 'ciWepsAdder', null, '', false);
+  // range+readout
+  bindSync('ciSelfGenRange', null, 'ciSelfGenOut', '%', true);
+  bindSync('ciForwardEscRange', null, 'ciForwardEscOut', '%', false);
+  bindSync('ciPpaEscRange', null, 'ciPpaEscOut', '%', false);
+  bindSync('ciHorizonRange', null, 'ciHorizonOut', 'years', true);
+
+  // route radios
+  document.getElementById('ciRouteGroup').addEventListener('change', () => {
+    ciUpdateRouteInputs();
+    ciRecompute();
+  });
+
+  // override recompute target: bindSync calls recompute(); we need ciRecompute for these inputs.
+  // Instead, attach dedicated listeners so both models update independently.
+  const ciIds = ['ciSpendRange', 'ciSpend', 'ciGridTodayRange', 'ciGridToday',
+    'ciPpaTariffRange', 'ciPpaTariff', 'ciWepsAdderRange', 'ciWepsAdder',
+    'ciSelfGenRange', 'ciForwardEscRange', 'ciPpaEscRange', 'ciHorizonRange'];
+  ciIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', ciRecompute);
+  });
+
+  ciUpdateRouteInputs();
+}
+
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
   renderStatus();
@@ -436,4 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSources();
   initControls();
   recompute();
+  initCiControls();
+  ciRecompute();
 });

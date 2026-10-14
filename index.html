@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SA Municipal Electricity Tariff Tracker, 2026/27 | Journey2Green</title>
-  <meta name="description" content="NERSA-approved 2026/27 electricity tariff increases across South African metros, with a live multi-year compound impact model for a residential household budget. Prepared for Journey2Green." />
-  <link rel="stylesheet" href="styles.css" />
+  <title>SA Electricity Tariff Tracker, Eskom and municipal, 2026/27 | Journey2Green</title>
+  <meta name="description" content="NERSA-approved 2026/27 electricity tariff increases for Eskom, the dominant grid provider, and South African municipalities, with a live multi-year compound impact model for a residential household budget. Prepared for Journey2Green." />
+  <link rel="stylesheet" href="styles.css?v=20260713b" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232E7D32' d='M16 3C9 9 6 14 6 20a10 10 0 0 0 20 0c0-6-3-11-10-17z'/%3E%3C/svg%3E" />
 </head>
 <body>
@@ -13,18 +13,18 @@
   <!-- 1. HEADER -->
   <header class="site-header">
     <div class="header-inner">
-      <span class="brand-logo" aria-label="Journey2Green logo">
-        <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="21" cy="21" r="20" stroke="currentColor" stroke-width="2"/>
-          <path d="M21 8C14 14 11 18 11 24a10 10 0 0 0 20 0c0-6-3-10-10-16z" fill="currentColor"/>
-          <path d="M21 12v18" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </span>
+      <img class="brand-logo-img" src="j2g-logo.jpg" alt="Journey2Green logo" width="196" height="28" />
       <div class="brand-text">
-        <h1>SA Municipal Electricity Tariff Tracker, 2026/27</h1>
+        <h1>SA Electricity Tariff Tracker, Eskom and municipal, 2026/27</h1>
         <p>NERSA-approved increases, effective 1 July 2026 (municipal) and 1 April 2026 (Eskom direct). Prepared 9 July 2026.</p>
       </div>
-      <span class="brand-tag">Journey2Green</span>
+      <button id="downloadPdf" class="pdf-btn" type="button" aria-label="Download this dashboard as a PDF">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="pdf-btn-label">Download PDF</span>
+      </button>
     </div>
   </header>
 
@@ -89,8 +89,8 @@
     <section id="alert">
       <div class="section-head">
         <div class="eyebrow">Publication status</div>
-        <h2>NERSA schedule and IBT-publication alert</h2>
-        <p class="lead">Tracking which metro schedules are officially published versus estimated, so figures can be used with the right level of confidence.</p>
+        <h2>NERSA schedule and inclining block tariff publication alert</h2>
+        <p class="lead">Tracking which metro schedules are officially published versus estimated, so figures can be used with the right level of confidence. Several metros use an inclining block tariff (IBT), where the per-unit rate steps up as monthly consumption rises.</p>
       </div>
       <div class="alert-note">
         NERSA published Reasons for Decision on all 176 municipal tariff applications for FY2026/27, effective 1 July 2026.
@@ -179,8 +179,8 @@
     <section id="ci-view">
       <div class="section-head">
         <div class="eyebrow">Journey2Green engineering view</div>
-        <h2>C&amp;I customer view: solar plus BESS vs the rising grid</h2>
-        <p class="lead">This is the Journey2Green blended-tariff engineering view. It overlays a solar plus BESS blended tariff against the customer's grid tariff trajectory, so a CFO can see the year the grid curve crosses above the J2G solution. It uses the J2G 12-step C&amp;I sizing methodology, Step 6: blended tariff engineering.</p>
+        <h2>C&amp;I customer view: solar plus battery vs the rising grid</h2>
+        <p class="lead">This is the Journey2Green blended-tariff engineering view for commercial and industrial (C&amp;I) customers. It overlays a solar plus battery energy storage system (BESS) blended tariff against the customer's grid tariff trajectory, so a CFO can see the year the grid curve crosses above the J2G solution. It uses the J2G 12-step C&amp;I sizing methodology, Step 6: blended tariff engineering.</p>
       </div>
 
       <div class="model-layout">
@@ -196,7 +196,7 @@
 
           <div class="control">
             <label for="ciGridToday">Blended grid tariff today: c/kWh</label>
-            <div class="hint">Total bill divided by total kWh (default 220 c/kWh = R2.20/kWh)</div>
+            <div class="hint">Your current all-in cost per unit, entered here as a single indicative rate (default 220 c/kWh = R2.20/kWh). In a full J2G engagement this is not assumed, it is reconstructed from your bill and 30-minute load against each time-of-use slot. See the note below.</div>
             <div class="row">
               <input type="range" id="ciGridTodayRange" min="120" max="400" step="1" value="220" />
               <input type="number" id="ciGridToday" min="1" step="1" value="220" />
@@ -207,9 +207,9 @@
             <label>Commercial route</label>
             <div class="hint">Three J2G routes, matched to your balance sheet</div>
             <div class="route-group" id="ciRouteGroup">
-              <label class="route-opt"><input type="radio" name="ciRoute" value="dci" checked /> <span>Outright / DCI, customer owns asset</span></label>
+              <label class="route-opt"><input type="radio" name="ciRoute" value="dci" checked /> <span>Outright or direct capital investment (DCI), customer owns asset</span></label>
               <label class="route-opt"><input type="radio" name="ciRoute" value="btm" /> <span>PPA behind-the-meter (BTM)</span></label>
-              <label class="route-opt"><input type="radio" name="ciRoute" value="weps" /> <span>PPA wheeled (WEPS)</span></label>
+              <label class="route-opt"><input type="radio" name="ciRoute" value="weps" /> <span>PPA wheeled, under the wheeled energy pricing scheme (WEPS)</span></label>
             </div>
           </div>
 
@@ -283,7 +283,7 @@
         <div class="kpi-card live">
           <div class="label">Blended tariff today</div>
           <div class="value green" id="ci-kpi-today">220 c/kWh</div>
-          <div class="sub">Total bill divided by total kWh</div>
+          <div class="sub">Your indicative all-in rate, refined in a full engagement</div>
         </div>
         <div class="kpi-card live">
           <div class="label">J2G blended tariff, year 1</div>
@@ -324,10 +324,10 @@
         <div class="ci-callout">
           <div class="ci-callout-title">What J2G does differently</div>
           <ul>
-            <li>Bill reconstruction, not bill quotation.</li>
-            <li>30-minute resolution, not monthly averages.</li>
-            <li>Curtailment minimisation, not panel maximisation.</li>
-            <li>Blended tariff engineering: the only tariff number that allows a real comparison.</li>
+            <li>Bill reconstruction, not bill quotation. We rebuild your bill line by line to within 1% of actuals.</li>
+            <li>30-minute resolution, not monthly averages. Every half-hour of load is mapped to its time-of-use slot.</li>
+            <li>Blended tariff engineering. The blended tariff is calculated against how the solar and battery actually serve your load in each time-of-use slot, not by dividing one bill by one consumption figure. That is what makes it a true like-for-like number against a grid, PPA or wheeled offer.</li>
+            <li>Curtailment minimisation, not panel maximisation. We size to use the energy, not to oversell kilowatts.</li>
             <li>Commercial structure matched to your balance sheet, not ours.</li>
             <li>Risks named, not buried.</li>
           </ul>
@@ -380,7 +380,40 @@
     </div>
   </footer>
 
+  <!-- 9. J2G CONTACT FOOTER -->
+  <footer class="j2g-footer">
+    <div class="wrap j2g-footer-inner">
+      <div class="j2g-footer-brand">
+        <img class="j2g-footer-logo" src="j2g-logo.jpg" alt="Journey2Green logo" />
+        <p class="j2g-footer-tag">Your data driven journey to energy independence.</p>
+      </div>
+      <div class="j2g-footer-contact">
+        <div class="j2g-contact-block">
+          <span class="j2g-contact-label">Website:</span>
+          <a href="https://journey2.green" target="_blank" rel="noopener">journey2.green</a>
+        </div>
+        <div class="j2g-contact-block">
+          <span class="j2g-contact-label">Email:</span>
+          <a href="mailto:wessel@journey2.green">wessel@journey2.green</a>
+        </div>
+        <div class="j2g-contact-block">
+          <span class="j2g-contact-label">WhatsApp:</span>
+          <a href="https://wa.me/27833263331" target="_blank" rel="noopener">+27 83 326 3331</a>
+        </div>
+        <div class="j2g-contact-block">
+          <span class="j2g-contact-label">Office:</span>
+          <span>Montagu Office Park, Needwood Building 1, Cnr Cedar Road and Cedar Boulevard, Fourways, Gauteng, 2191</span>
+        </div>
+      </div>
+    </div>
+    <div class="wrap j2g-footer-legal">
+      <span>Journey2Green (Pty) Ltd. Distributed energy engineering, procurement, construction and financing.</span>
+    </div>
+  </footer>
+
   <script src="chart.umd.min.js"></script>
-  <script src="app.js"></script>
+  <script src="html2canvas.min.js"></script>
+  <script src="jspdf.umd.min.js"></script>
+  <script src="app.js?v=20260713b"></script>
 </body>
 </html>

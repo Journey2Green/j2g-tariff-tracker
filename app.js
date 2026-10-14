@@ -649,4 +649,145 @@ document.addEventListener('DOMContentLoaded', () => {
   recompute();
   initCiControls();
   ciRecompute();
+  initPdfExport();
 });
+
+// ---------- PDF export ----------
+function initPdfExport() {
+  const btn = document.getElementById('downloadPdf');
+  if (!btn) return;
+  btn.addEventListener('click', () => exportPdf(btn));
+}
+
+async function exportPdf(btn) {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) {
+    alert('PDF libraries did not load. Please refresh and try again.');
+    return;
+  }
+  const label = btn.querySelector('.pdf-btn-label');
+  const original = label ? label.textContent : '';
+  if (label) label.textContent = 'Preparing PDF, ';
+  btn.disabled = true;
+  document.body.classList.add('pdf-exporting');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    // Collect fine-grained blocks so cards, charts and tables are never split.
+    // For each top-level section we take its header, then each self-contained
+    // child block (KPI card, chart, table, callout) as its own keep-together unit.
+    const blocks = [];
+    const sections = Array.from(document.querySelectorAll('main.wrap > section, header.site-header'));
+    for (const sec of sections) {
+      if (sec.tagName === 'HEADER') { blocks.push(sec); continue; }
+      const head = sec.querySelector('.section-head');
+      if (head) blocks.push(head);
+      const note = sec.querySelector(':scope > .alert-note');
+      if (note) blocks.push(note);
+      const subheads = sec.querySelectorAll(':scope > .subhead');
+
+      // Special-case the IBT schedules section: it is a tabbed panel where only
+      // one metro is visible. Capture the tab bar plus the active panel's card,
+      // and skip the generic sweeps (which would otherwise capture the hidden
+      // panels and emit blank pages).
+      const ibtPanelsHost = sec.querySelector('#ibt-panels');
+      if (ibtPanelsHost) {
+        subheads.forEach(b => { if (!blocks.includes(b)) blocks.push(b); });
+        const tabsBar = sec.querySelector('#ibt-tabs');
+        if (tabsBar) blocks.push(tabsBar);
+        const activeCard = sec.querySelector('#ibt-panels .tab-panel.active .chart-box');
+        if (activeCard) blocks.push(activeCard);
+        continue;
+      }
+
+      // Individual KPI cards keep together on their own.
+      const cards = sec.querySelectorAll('.kpi-card');
+      const controls = sec.querySelectorAll('.controls');
+      // Capture .chart-box only (it wraps .chart-holder, so do not add the holder too).
+      const charts = sec.querySelectorAll('.chart-box');
+      const tables = sec.querySelectorAll('.table-wrap');
+      const callouts = sec.querySelectorAll('.ci-callout, .fixed-note');
+      [...subheads, ...cards, ...controls, ...charts, ...tables, ...callouts].forEach(b => {
+        if (b && !blocks.includes(b)) blocks.push(b);
+      });
+      // Fallback: if a section produced no recognised child blocks, take it whole.
+      if (!head && !cards.length && !charts.length && !tables.length && !callouts.length && !controls.length) {
+        blocks.push(sec);
+      }
+    }
+
+    let cursorY = margin;
+    let firstOnPage = true;
+
+    for (const el of blocks) {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+      if (imgH <= usableH) {
+        // Fits on one page. Move to a new page if it will not fit in the space left.
+        if (!firstOnPage && cursorY + imgH > pageH - margin) {
+          pdf.addPage();
+          cursorY = margin;
+        }
+        pdf.addImage(imgData, 'JPEG', margin, cursorY, imgW, imgH);
+        cursorY += imgH + 5;
+        firstOnPage = false;
+      } else {
+        // Block genuinely taller than one page (rare): give it a fresh page and
+        // slice only that block. Start on a new page unless the page is empty.
+        if (!firstOnPage) { pdf.addPage(); cursorY = margin; }
+        const pageCanvasH = Math.floor((usableH * canvas.width) / imgW);
+        let sy = 0;
+        while (sy < canvas.height) {
+          const sliceH = Math.min(pageCanvasH, canvas.height - sy);
+          const slice = document.createElement('canvas');
+          slice.width = canvas.width;
+          slice.height = sliceH;
+          const ctx = slice.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, slice.width, slice.height);
+          ctx.drawImage(canvas, 0, sy, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          const sliceData = slice.toDataURL('image/jpeg', 0.92);
+          const sliceImgH = (sliceH * imgW) / canvas.width;
+          pdf.addImage(sliceData, 'JPEG', margin, margin, imgW, sliceImgH);
+          sy += sliceH;
+          if (sy < canvas.height) { pdf.addPage(); }
+          cursorY = margin + sliceImgH + 5;
+        }
+        firstOnPage = false;
+      }
+    }
+
+    // Footer with source line and page numbers on every page.
+    const total = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(7);
+      pdf.setTextColor(120);
+      pdf.text('Journey2Green, SA Electricity Tariff Tracker, Eskom and municipal, 2026/27. Source: NERSA decision, June 2026.', margin, pageH - 4);
+      pdf.text(i + ' / ' + total, pageW - margin, pageH - 4, { align: 'right' });
+    }
+
+    pdf.save('J2G_SA_Electricity_Tariff_Tracker_Eskom_and_Municipal_2026-27.pdf');
+  } catch (err) {
+    console.error(err);
+    alert('Sorry, the PDF could not be generated. Please try again.');
+  } finally {
+    document.body.classList.remove('pdf-exporting');
+    if (label) label.textContent = original;
+    btn.disabled = false;
+  }
+}
